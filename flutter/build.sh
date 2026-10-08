@@ -23,6 +23,16 @@ sdkb=${DARWIN_SDK_BUNDLE:-${XDG_CONFIG_HOME:-$HOME/.config}/swiftpm/swift-sdks/d
 ios_sdk=$sdkb/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
 tools=$sdkb/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
 tc=$(dirname "$(readlink -f "$(command -v swift)")")
+# The shims forward to LLVM's binutils, which neither the Swift toolchain nor
+# the darwin SDK bundle ships.
+missing=
+for t in llvm-strip llvm-lipo llvm-otool llvm-install-name-tool llvm-ar; do
+  command -v "$t" >/dev/null || missing+=" $t"
+done
+[ -z "$missing" ] || { echo "missing:$missing (Arch package: llvm; install with: sudo pacman -S --needed llvm)" >&2; exit 1; }
+for t in python3 zip file; do
+  command -v "$t" >/dev/null || { echo "missing: $t (Arch package: ${t/python3/python})" >&2; exit 1; }
+done
 file -b "$flutter_root/bin/cache/artifacts/engine/ios-release/gen_snapshot_arm64" 2>/dev/null | grep -q ELF ||
   { echo "Flutter's iOS gen_snapshot is not the Linux build; run $here/setup.sh" >&2; exit 1; }
 

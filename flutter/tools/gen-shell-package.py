@@ -30,7 +30,10 @@ for p in deps["plugins"]["ios"]:
     if pkg is None:
         sys.exit(f"{name}: no ios/ or darwin/ Package.swift; this plugin needs CocoaPods")
     manifest = open(os.path.join(pkg, "Package.swift")).read()
-    product = re.search(r'\.library\(\s*name:\s*"([^"]+)"', manifest).group(1)
+    library = re.search(r'\.library\(\s*name:\s*"([^"]+)"', manifest)
+    if library is None:
+        sys.exit(f"{name}: {pkg}/Package.swift declares no .library product to link")
+    product = library.group(1)
     plugins.append((name, pkg, product))
 
 src_runner = os.path.join(out, "Sources", "Runner")

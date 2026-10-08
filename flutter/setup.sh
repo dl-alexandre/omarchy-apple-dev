@@ -9,9 +9,16 @@
 # looks for it. Safe to re-run: each step is skipped when already done.
 #
 # Network: depot_tools (chromium.googlesource.com) and the Dart SDK with its
-# build dependencies (dart.googlesource.com, about 6 GB on disk) — there is no
-# prebuilt Linux-hosted iOS gen_snapshot to download instead. `flutter
+# build dependencies (dart.googlesource.com, 7 GB on disk) — there is no
+# prebuilt Linux-hosted iOS gen_snapshot to download instead. `gclient sync`
+# also runs the Dart SDK's DEPS hooks, which download prebuilt build tools from
+# Google storage (among them the clang, gn and ninja the build uses, sysroots
+# and a bootstrap Dart SDK) and execute them during the build. `flutter
 # precache --ios` fetches Flutter's own iOS engine artifacts.
+#
+# This modifies the Flutter install: gen_snapshot_arm64 under
+# bin/cache/artifacts/engine/ios-release is replaced, the original kept beside
+# it as gen_snapshot_arm64.macos. Move that file back to undo it.
 #
 # Env: FLUTTER (default: flutter on PATH), FLUTTER_IOS_WORK (default:
 # ~/.cache/omarchy-apple-dev/flutter).

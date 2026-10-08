@@ -14,9 +14,15 @@ aarch64 hosts are untested.
 
 ```
 ./install-toolchain.sh            # once, as for any app in this repo
+sudo pacman -S --needed llvm      # llvm-strip, llvm-lipo, llvm-otool, llvm-install-name-tool, llvm-ar
 flutter/setup.sh                  # once per Flutter version (7 GB, 12 min here)
 flutter/build.sh --install /path/to/flutter/app [KEY=VALUE ...]
 ```
+
+The `llvm` package is the one dependency `install-toolchain.sh` does not
+bring: the shims forward to its binutils, and neither the Swift toolchain nor
+the darwin SDK bundle ships them. `build.sh` names whatever is missing before
+it starts.
 
 `KEY=VALUE` arguments become `--dart-define`s. Without `--install` the result
 is `<app>/build/ios-linux/Runner.ipa`, unsigned, for `xtool install` or
@@ -26,6 +32,22 @@ app's `ios/Runner.xcodeproj` and `pubspec.yaml`; `BUNDLE_ID`, `MIN_IOS`,
 
 A clean build of the stock template with four plugins takes 47 s on a 2018
 laptop (i7-8650U).
+
+## What `setup.sh` fetches and changes
+
+- **Network.** depot_tools from chromium.googlesource.com and the Dart SDK
+  from dart.googlesource.com, pinned to the `dart_revision` in the installed
+  Flutter's `DEPS`: 7 GB on disk. `gclient sync` also runs the Dart SDK's DEPS
+  hooks, which download prebuilt build tools from Google storage (the clang,
+  gn and ninja the build runs, sysroots, a bootstrap Dart SDK). Those
+  prebuilts execute on your machine during the build. `flutter precache --ios`
+  then fetches Flutter's own iOS engine artifacts.
+- **It modifies the Flutter install.** `gen_snapshot_arm64` under
+  `bin/cache/artifacts/engine/ios-release` is replaced by the Linux build; the
+  original is kept beside it as `gen_snapshot_arm64.macos`. To undo, move that
+  file back over `gen_snapshot_arm64`. A Flutter upgrade restores the macOS
+  binary by itself, after which `build.sh` stops with "not the Linux build"
+  until `setup.sh` runs again.
 
 ## How it works
 
