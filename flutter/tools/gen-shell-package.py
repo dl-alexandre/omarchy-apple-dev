@@ -69,7 +69,8 @@ open(os.path.join(src_reg, "GeneratedPluginRegistrant.m"), "w").write(registrant
 # resolves from there. The package is a placeholder; the Flutter module itself
 # still comes from the framework search path the build passes.
 packages = os.path.join(out, "Packages")
-shutil.rmtree(packages, ignore_errors=True)
+if os.path.isdir(packages):
+    shutil.rmtree(packages)
 framework_pkg = os.path.join(packages, "FlutterFramework")
 os.makedirs(os.path.join(framework_pkg, "Sources", "FlutterFramework"))
 open(os.path.join(framework_pkg, "Package.swift"), "w").write("""// swift-tools-version: 5.9
@@ -87,7 +88,13 @@ open(os.path.join(framework_pkg, "Sources", "FlutterFramework", "FlutterFramewor
 local = []
 for name, pkg, product in plugins:
     dest = os.path.join(packages, os.path.basename(pkg))
-    shutil.copytree(pkg, dest, symlinks=True, ignore=shutil.ignore_patterns(".build"))
+    # Links are followed, not kept: a package may link its sources from the
+    # plugin's parent directory (Sources/x -> ../../Classes), and a relative
+    # link would point nowhere once the package has moved.
+    try:
+        shutil.copytree(pkg, dest, symlinks=False, ignore=shutil.ignore_patterns(".build", ".swiftpm"))
+    except (shutil.Error, OSError) as error:
+        sys.exit(f"{name}: cannot copy {pkg} into the shell package: {error}")
     local.append((name, dest, product))
 plugins = local
 
