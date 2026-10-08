@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# install_name_tool via LLVM, then repair the layout dyld insists on (see
+# tools/macho-align.py).
+set -euo pipefail
+here=$(dirname "$(readlink -f "$0")")
+llvm-install-name-tool "$@"
+python3 "$here/../tools/macho-align.py" "${*: -1}"
